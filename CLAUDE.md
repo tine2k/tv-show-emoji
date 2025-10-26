@@ -54,3 +54,41 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
 This ensures that task progress and code changes are synchronized in version control.
+
+## TESTING REQUIREMENTS
+
+**CRITICAL: All functionality must include unit tests**
+
+When implementing any feature, function, or module:
+
+1. **Write unit tests alongside the implementation** - tests are not optional
+2. **Test coverage requirements:**
+   - All public functions and methods must have tests
+   - Test both happy paths and error cases
+   - Include edge cases and boundary conditions
+3. **Testing framework:** Use Bun's built-in test runner (`bun test`)
+4. **Test file naming:** Place tests in `__tests__/` directories or use `.test.ts` suffix
+5. **Test organization:** Mirror the source structure (e.g., `src/validators.ts` → `src/__tests__/validators.test.ts`)
+6. **Run tests before completion:** Always run `bun test` to ensure all tests pass before marking a task as complete
+
+**Example test structure:**
+```typescript
+import { describe, test, expect } from 'bun:test';
+import { validateEmojiCount } from '../validators';
+
+describe('validateEmojiCount', () => {
+  test('accepts valid count within range', () => {
+    expect(validateEmojiCount('5')).toBe(5);
+  });
+
+  test('rejects count below minimum', () => {
+    expect(() => validateEmojiCount('0')).toThrow();
+  });
+
+  test('rejects count above maximum', () => {
+    expect(() => validateEmojiCount('31')).toThrow();
+  });
+});
+```
+
+This ensures code quality, prevents regressions, and makes refactoring safer.
