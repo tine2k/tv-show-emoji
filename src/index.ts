@@ -4,6 +4,8 @@ import { Command } from 'commander';
 import { validateSubject, validateEmojiCount } from './validators';
 import { DEFAULT_MODEL, DEFAULT_EMOJI_COUNT, VALID_SUBJECTS } from './constants';
 import { promptForShow, promptForSubject } from './prompts';
+import { validateOllamaConnection, findBestAvailableModel, OllamaError } from './ollama';
+import chalk from 'chalk';
 
 const program = new Command();
 
@@ -53,6 +55,40 @@ function detectMode(): Mode {
 const mode = detectMode();
 
 async function main() {
+  // Step 1: Validate Ollama connection
+  try {
+    if (mode === 'interactive') {
+      console.log(chalk.dim('Checking Ollama connection...'));
+    }
+    await validateOllamaConnection();
+  } catch (error) {
+    if (error instanceof OllamaError) {
+      console.error(chalk.red('\n✗ Ollama Connection Error\n'));
+      console.error(error.message);
+      process.exit(1);
+    }
+    throw error;
+  }
+
+  // Step 2: Validate and select model
+  let selectedModel: string;
+  try {
+    selectedModel = await findBestAvailableModel(options.model);
+
+    // Inform user if we're using a fallback model
+    if (selectedModel !== options.model && mode === 'interactive') {
+      console.log(chalk.yellow(`\n⚠ Model "${options.model}" not found, using "${selectedModel}" instead\n`));
+    }
+  } catch (error) {
+    if (error instanceof OllamaError) {
+      console.error(chalk.red('\n✗ Model Error\n'));
+      console.error(error.message);
+      process.exit(1);
+    }
+    throw error;
+  }
+
+  // Step 3: Get show and subject (interactive mode)
   let show = options.show;
   let subject = options.subject;
 
@@ -68,14 +104,14 @@ async function main() {
     console.log('\nConfiguration:');
     console.log(`  TV Show: ${show}`);
     console.log(`  Subject: ${subject}`);
-    console.log(`  Model: ${options.model}`);
+    console.log(`  Model: ${selectedModel}`);
     console.log(`  Emoji Count: ${options.emojiCount}`);
-    console.log('\nProcessing request (to be implemented in tasks 1.4-1.6)...');
+    console.log('\nProcessing request (to be implemented in task 1.5)...');
   } else {
-    console.log('Non-interactive mode - processing request (to be implemented in tasks 1.4-1.6)');
+    console.log('Non-interactive mode - processing request (to be implemented in task 1.5)');
     console.log(`  TV Show: ${show}`);
     console.log(`  Subject: ${subject}`);
-    console.log(`  Model: ${options.model}`);
+    console.log(`  Model: ${selectedModel}`);
     console.log(`  Emoji Count: ${options.emojiCount}`);
   }
 }
