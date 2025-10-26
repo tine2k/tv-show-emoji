@@ -18,6 +18,6 @@ export const VALID_SUBJECTS = [
 export type Subject = typeof VALID_SUBJECTS[number];
 
 export const DEFAULT_MODEL = 'llama3.2';
-export const DEFAULT_EMOJI_COUNT = 5;
+export const DEFAULT_EMOJI_COUNT = 3;
 export const MIN_EMOJI_COUNT = 1;
 export const MAX_EMOJI_COUNT = 30;
