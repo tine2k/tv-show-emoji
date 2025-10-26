@@ -7,7 +7,7 @@ import { promptForShow, promptForSubject, promptForContinue } from './prompts';
 import { validateOllamaConnection, findBestAvailableModel, OllamaError, generateCompletion } from './ollama';
 import { generatePrompt } from './prompt-generator';
 import { parseEmojiResponse, ParseError } from './response-parser';
-import { formatEmojiResults, formatError, shouldUseColors } from './output-formatter';
+import { formatEmojiResults, formatError, shouldUseColors, getEmojiWarning } from './output-formatter';
 import chalk from 'chalk';
 import ora from 'ora';
 
@@ -58,7 +58,53 @@ function detectMode(): Mode {
 
 const mode = detectMode();
 
+// Track if we're in the middle of processing
+let isProcessing = false;
+
+/**
+ * Handles graceful shutdown on SIGINT (Ctrl+C) and SIGTERM
+ */
+function setupSignalHandlers(): void {
+  const handleShutdown = () => {
+    const useColors = shouldUseColors();
+
+    if (isProcessing) {
+      // User interrupted during processing
+      if (useColors) {
+        console.log(chalk.yellow('\n\n⚠ Operation interrupted by user'));
+        console.log(chalk.dim('👋 Thanks for using tv-show-emoji!\n'));
+      } else {
+        console.log('\n\nOperation interrupted by user');
+        console.log('Thanks for using tv-show-emoji!\n');
+      }
+    } else {
+      // Clean exit during idle/prompt
+      if (useColors) {
+        console.log(chalk.dim('\n\n👋 Thanks for using tv-show-emoji!\n'));
+      } else {
+        console.log('\n\nThanks for using tv-show-emoji!\n');
+      }
+    }
+
+    process.exit(130); // Standard exit code for SIGINT
+  };
+
+  process.on('SIGINT', () => handleShutdown());
+  process.on('SIGTERM', () => handleShutdown());
+}
+
 async function main() {
+  // Set up signal handlers for clean shutdown
+  setupSignalHandlers();
+
+  // Display emoji rendering warning if needed (only in interactive mode)
+  if (mode === 'interactive') {
+    const emojiWarning = getEmojiWarning();
+    if (emojiWarning) {
+      console.log(emojiWarning);
+    }
+  }
+
   // Step 1: Validate Ollama connection
   try {
     if (mode === 'interactive') {
@@ -133,12 +179,15 @@ async function main() {
         : null;
 
       try {
+        isProcessing = true;
         response = await generateCompletion(selectedModel, prompt);
+        isProcessing = false;
 
         if (spinner) {
           spinner.succeed('Emojis generated!');
         }
       } catch (error) {
+        isProcessing = false;
         if (spinner) {
           spinner.fail('Failed to generate emojis');
         }

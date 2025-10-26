@@ -34,6 +34,45 @@ export function shouldUseColors(): boolean {
 }
 
 /**
+ * Detects if terminal likely supports emoji rendering
+ * - Check TERM environment variable for known limited terminals
+ * - Check LANG/LC_ALL for UTF-8 support
+ */
+export function supportsEmoji(): boolean {
+  const term = process.env.TERM?.toLowerCase() || '';
+  const lang = process.env.LANG?.toUpperCase() || process.env.LC_ALL?.toUpperCase() || '';
+
+  // Known terminals with limited emoji support
+  const limitedTerminals = ['dumb', 'cons25', 'emacs', 'linux'];
+  if (limitedTerminals.includes(term)) {
+    return false;
+  }
+
+  // Check for UTF-8 encoding support (required for emojis)
+  if (lang && !lang.includes('UTF-8') && !lang.includes('UTF8')) {
+    return false;
+  }
+
+  // If we have a TTY and UTF-8, assume emoji support
+  return process.stdout.isTTY;
+}
+
+/**
+ * Gets an emoji rendering warning message if emojis may not display correctly
+ */
+export function getEmojiWarning(): string | null {
+  if (!supportsEmoji()) {
+    const useColors = shouldUseColors();
+    if (useColors) {
+      return chalk.yellow('⚠ Note: Your terminal may not display emojis correctly. Output will be in plain text.\n');
+    } else {
+      return 'Note: Your terminal may not display emojis correctly. Output will be in plain text.\n';
+    }
+  }
+  return null;
+}
+
+/**
  * Formats emoji results for CLI output with plain text fallback
  */
 export function formatEmojiResults(results: EmojiResult[], options: FormatOptions): string {

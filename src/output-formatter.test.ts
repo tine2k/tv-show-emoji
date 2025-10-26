@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { formatEmojiResults, formatError, shouldUseColors } from './output-formatter';
+import { formatEmojiResults, formatError, shouldUseColors, supportsEmoji, getEmojiWarning } from './output-formatter';
 import type { EmojiResult } from './response-parser';
 
 describe('formatEmojiResults', () => {
@@ -366,5 +366,248 @@ describe('formatEmojiResults - plain text mode', () => {
     expect(output).not.toContain('\x1b[');
     expect(output).toContain('Error');
     expect(output).toContain('Test error');
+  });
+});
+
+describe('supportsEmoji', () => {
+  let originalEnv: NodeJS.ProcessEnv;
+  let originalIsTTY: boolean;
+
+  beforeEach(() => {
+    originalEnv = { ...process.env };
+    originalIsTTY = process.stdout.isTTY || false;
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: originalIsTTY,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  test('returns true for UTF-8 terminal with TTY', () => {
+    process.env.TERM = 'xterm-256color';
+    process.env.LANG = 'en_US.UTF-8';
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: true,
+      writable: true,
+      configurable: true,
+    });
+
+    expect(supportsEmoji()).toBe(true);
+  });
+
+  test('returns false for dumb terminal', () => {
+    process.env.TERM = 'dumb';
+    process.env.LANG = 'en_US.UTF-8';
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: true,
+      writable: true,
+      configurable: true,
+    });
+
+    expect(supportsEmoji()).toBe(false);
+  });
+
+  test('returns false for linux console terminal', () => {
+    process.env.TERM = 'linux';
+    process.env.LANG = 'en_US.UTF-8';
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: true,
+      writable: true,
+      configurable: true,
+    });
+
+    expect(supportsEmoji()).toBe(false);
+  });
+
+  test('returns false for emacs terminal', () => {
+    process.env.TERM = 'emacs';
+    process.env.LANG = 'en_US.UTF-8';
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: true,
+      writable: true,
+      configurable: true,
+    });
+
+    expect(supportsEmoji()).toBe(false);
+  });
+
+  test('returns false for cons25 terminal', () => {
+    process.env.TERM = 'cons25';
+    process.env.LANG = 'en_US.UTF-8';
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: true,
+      writable: true,
+      configurable: true,
+    });
+
+    expect(supportsEmoji()).toBe(false);
+  });
+
+  test('returns false for non-UTF-8 locale', () => {
+    process.env.TERM = 'xterm-256color';
+    process.env.LANG = 'en_US.ISO-8859-1';
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: true,
+      writable: true,
+      configurable: true,
+    });
+
+    expect(supportsEmoji()).toBe(false);
+  });
+
+  test('returns false for ASCII locale', () => {
+    process.env.TERM = 'xterm-256color';
+    process.env.LANG = 'C';
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: true,
+      writable: true,
+      configurable: true,
+    });
+
+    expect(supportsEmoji()).toBe(false);
+  });
+
+  test('returns false when not TTY', () => {
+    process.env.TERM = 'xterm-256color';
+    process.env.LANG = 'en_US.UTF-8';
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: false,
+      writable: true,
+      configurable: true,
+    });
+
+    expect(supportsEmoji()).toBe(false);
+  });
+
+  test('handles case-insensitive TERM matching', () => {
+    process.env.TERM = 'DUMB';
+    process.env.LANG = 'en_US.UTF-8';
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: true,
+      writable: true,
+      configurable: true,
+    });
+
+    expect(supportsEmoji()).toBe(false);
+  });
+
+  test('handles UTF8 without hyphen in LANG', () => {
+    process.env.TERM = 'xterm-256color';
+    process.env.LANG = 'en_US.UTF8';
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: true,
+      writable: true,
+      configurable: true,
+    });
+
+    expect(supportsEmoji()).toBe(true);
+  });
+
+  test('uses LC_ALL when LANG is not set', () => {
+    process.env.TERM = 'xterm-256color';
+    delete process.env.LANG;
+    process.env.LC_ALL = 'en_US.UTF-8';
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: true,
+      writable: true,
+      configurable: true,
+    });
+
+    expect(supportsEmoji()).toBe(true);
+  });
+
+  test('handles missing TERM variable', () => {
+    delete process.env.TERM;
+    process.env.LANG = 'en_US.UTF-8';
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: true,
+      writable: true,
+      configurable: true,
+    });
+
+    // Should not crash and make reasonable decision
+    const result = supportsEmoji();
+    expect(typeof result).toBe('boolean');
+  });
+});
+
+describe('getEmojiWarning', () => {
+  let originalEnv: NodeJS.ProcessEnv;
+  let originalIsTTY: boolean;
+
+  beforeEach(() => {
+    originalEnv = { ...process.env };
+    originalIsTTY = process.stdout.isTTY || false;
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: originalIsTTY,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  test('returns null when emoji is supported', () => {
+    process.env.TERM = 'xterm-256color';
+    process.env.LANG = 'en_US.UTF-8';
+    delete process.env.NO_COLOR;
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: true,
+      writable: true,
+      configurable: true,
+    });
+
+    const warning = getEmojiWarning();
+    expect(warning).toBeNull();
+  });
+
+  test('returns warning message when emoji is not supported', () => {
+    process.env.TERM = 'dumb';
+    process.env.LANG = 'en_US.UTF-8';
+    delete process.env.NO_COLOR;
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: true,
+      writable: true,
+      configurable: true,
+    });
+
+    const warning = getEmojiWarning();
+    expect(warning).not.toBeNull();
+    expect(warning).toContain('terminal may not display emojis correctly');
+  });
+
+  test('returns plain text warning when colors disabled', () => {
+    process.env.TERM = 'dumb';
+    process.env.LANG = 'en_US.UTF-8';
+    process.env.NO_COLOR = '1';
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: true,
+      writable: true,
+      configurable: true,
+    });
+
+    const warning = getEmojiWarning();
+    expect(warning).not.toBeNull();
+    expect(warning).not.toContain('\x1b['); // No ANSI codes
+    expect(warning).toContain('terminal may not display emojis correctly');
+  });
+
+  test('warning mentions plain text output', () => {
+    process.env.TERM = 'dumb';
+    process.env.LANG = 'en_US.UTF-8';
+    Object.defineProperty(process.stdout, 'isTTY', {
+      value: true,
+      writable: true,
+      configurable: true,
+    });
+
+    const warning = getEmojiWarning();
+    expect(warning).toContain('plain text');
   });
 });
