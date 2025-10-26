@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'bun:test';
 import { sanitizeCustomSubject, filterTVShows } from './prompts';
+import { VALID_SUBJECTS } from './constants';
 
 describe('sanitizeCustomSubject', () => {
   test('trims whitespace', () => {
@@ -103,5 +104,27 @@ describe('filterTVShows', () => {
     // Shows starting with "The Office" should come before shows just containing those words
     const topResults = results.slice(0, 3);
     expect(topResults.some(show => show.startsWith('The Office'))).toBe(true);
+  });
+});
+
+describe('VALID_SUBJECTS ordering', () => {
+  test('overall is the first subject in the list', () => {
+    expect(VALID_SUBJECTS[0]).toBe('overall');
+  });
+
+  test('overall exists in the subjects list', () => {
+    expect(VALID_SUBJECTS).toContain('overall');
+  });
+
+  test('all expected subjects are still present', () => {
+    const expectedSubjects = [
+      'overall', 'character', 'relationship', 'plot', 'setting',
+      'theme', 'episode', 'season', 'mood', 'location',
+      'genre', 'conflict', 'emotion', 'symbol'
+    ] as const;
+    expect(VALID_SUBJECTS.length).toBe(14);
+    expectedSubjects.forEach(subject => {
+      expect(VALID_SUBJECTS.includes(subject)).toBe(true);
+    });
   });
 });

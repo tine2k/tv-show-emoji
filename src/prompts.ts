@@ -1,6 +1,6 @@
 import { input, select } from '@inquirer/prompts';
 import { TV_SHOWS } from './data/tv-shows';
-import { VALID_SUBJECTS, Subject } from './constants';
+import { VALID_SUBJECTS } from './constants';
 
 /**
  * Prompts user to select a TV show with autocomplete functionality.
@@ -43,6 +43,7 @@ export async function promptForSubject(): Promise<string> {
   const selection = await select({
     message: 'Select subject:',
     choices,
+    default: 'overall',
     pageSize: 15,
   });
 

@@ -1,4 +1,5 @@
 export const VALID_SUBJECTS = [
+  'overall',
   'character',
   'relationship',
   'plot',
@@ -6,7 +7,6 @@ export const VALID_SUBJECTS = [
   'theme',
   'episode',
   'season',
-  'overall',
   'mood',
   'location',
   'genre',
