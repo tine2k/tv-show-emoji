@@ -4,7 +4,10 @@ import { Command } from 'commander';
 import { validateSubject, validateEmojiCount } from './validators';
 import { DEFAULT_MODEL, DEFAULT_EMOJI_COUNT, VALID_SUBJECTS } from './constants';
 import { promptForShow, promptForSubject } from './prompts';
-import { validateOllamaConnection, findBestAvailableModel, OllamaError } from './ollama';
+import { validateOllamaConnection, findBestAvailableModel, OllamaError, generateCompletion } from './ollama';
+import { generatePrompt } from './prompt-generator';
+import { parseEmojiResponse, ParseError } from './response-parser';
+import { formatEmojiResults, formatError } from './output-formatter';
 import chalk from 'chalk';
 
 const program = new Command();
@@ -106,13 +109,49 @@ async function main() {
     console.log(`  Subject: ${subject}`);
     console.log(`  Model: ${selectedModel}`);
     console.log(`  Emoji Count: ${options.emojiCount}`);
-    console.log('\nProcessing request (to be implemented in task 1.5)...');
-  } else {
-    console.log('Non-interactive mode - processing request (to be implemented in task 1.5)');
-    console.log(`  TV Show: ${show}`);
-    console.log(`  Subject: ${subject}`);
-    console.log(`  Model: ${selectedModel}`);
-    console.log(`  Emoji Count: ${options.emojiCount}`);
+    console.log(chalk.dim('\nGenerating emojis...'));
+  }
+
+  // Step 4: Generate prompt
+  const prompt = generatePrompt({
+    tvShow: show,
+    subject,
+    emojiCount: options.emojiCount,
+  });
+
+  // Step 5: Get completion from LLM
+  let response: string;
+  try {
+    response = await generateCompletion(selectedModel, prompt);
+  } catch (error) {
+    if (error instanceof OllamaError) {
+      console.error(formatError(error));
+      process.exit(1);
+    }
+    throw error;
+  }
+
+  // Step 6: Parse response
+  try {
+    const results = parseEmojiResponse(response, options.emojiCount);
+
+    // Step 7: Display results
+    const output = formatEmojiResults(results, {
+      tvShow: show,
+      subject,
+      emojiCount: options.emojiCount,
+      interactive: mode === 'interactive',
+    });
+
+    console.log(output);
+  } catch (error) {
+    if (error instanceof ParseError) {
+      console.error(formatError(error));
+      console.error(chalk.dim('\nRaw LLM response:'));
+      console.error(chalk.dim(response));
+      process.exit(1);
+    }
+    throw error;
   }
 }
 
