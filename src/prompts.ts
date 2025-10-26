@@ -1,4 +1,4 @@
-import { input, select } from '@inquirer/prompts';
+import { input, select, confirm } from '@inquirer/prompts';
 import { TV_SHOWS } from './data/tv-shows';
 import { VALID_SUBJECTS } from './constants';
 
@@ -137,4 +137,17 @@ function fuzzyMatch(search: string, target: string): boolean {
   }
 
   return searchIndex === search.length;
+}
+
+/**
+ * Prompts user to decide if they want to analyze another aspect
+ * @returns true if user wants to continue, false otherwise
+ */
+export async function promptForContinue(): Promise<boolean> {
+  const answer = await confirm({
+    message: 'Would you like to analyze another aspect?',
+    default: true,
+  });
+
+  return answer;
 }
