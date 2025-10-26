@@ -155,12 +155,6 @@ async function main() {
     if (mode === 'interactive') {
       // In loop, always prompt for subject (even if provided initially)
       subject = await promptForSubject();
-
-      console.log('\nConfiguration:');
-      console.log(`  TV Show: ${show}`);
-      console.log(`  Subject: ${subject}`);
-      console.log(`  Model: ${selectedModel}`);
-      console.log(`  Emoji Count: ${options.emojiCount}`);
     }
 
     // Step 5: Generate prompt
