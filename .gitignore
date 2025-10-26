@@ -1,0 +1,22 @@
+# Claude Code settings
+.claude/
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+*.exe
+
+# Environment files
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
