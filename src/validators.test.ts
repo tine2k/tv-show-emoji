@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test';
-import { validateSubject, validateEmojiCount } from '../validators';
-import { VALID_SUBJECTS } from '../constants';
+import { validateSubject, validateEmojiCount } from './validators';
+import { VALID_SUBJECTS } from './constants';
 
 describe('validateSubject', () => {
   test('accepts all valid subjects in lowercase', () => {

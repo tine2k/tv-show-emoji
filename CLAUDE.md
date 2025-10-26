@@ -67,14 +67,14 @@ When implementing any feature, function, or module:
    - Test both happy paths and error cases
    - Include edge cases and boundary conditions
 3. **Testing framework:** Use Bun's built-in test runner (`bun test`)
-4. **Test file naming:** Place tests in `__tests__/` directories or use `.test.ts` suffix
-5. **Test organization:** Mirror the source structure (e.g., `src/validators.ts` → `src/__tests__/validators.test.ts`)
+4. **Test file naming:** Use `.test.ts` suffix and place test files in the same directory as the source file
+5. **Test organization:** Keep tests next to their source (e.g., `src/validators.ts` → `src/validators.test.ts`)
 6. **Run tests before completion:** Always run `bun test` to ensure all tests pass before marking a task as complete
 
 **Example test structure:**
 ```typescript
 import { describe, test, expect } from 'bun:test';
-import { validateEmojiCount } from '../validators';
+import { validateEmojiCount } from './validators';
 
 describe('validateEmojiCount', () => {
   test('accepts valid count within range', () => {
