@@ -6,7 +6,13 @@ export const VALID_SUBJECTS = [
   'theme',
   'episode',
   'season',
-  'overall'
+  'overall',
+  'mood',
+  'location',
+  'genre',
+  'conflict',
+  'emotion',
+  'symbol'
 ] as const;
 
 export type Subject = typeof VALID_SUBJECTS[number];

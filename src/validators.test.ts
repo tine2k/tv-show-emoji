@@ -41,6 +41,29 @@ describe('validateSubject', () => {
       expect(error.message).toContain('plot');
     }
   });
+
+  test('accepts all 14 predefined subjects', () => {
+    // Verify we have exactly 14 subjects
+    expect(VALID_SUBJECTS.length).toBe(14);
+
+    // Test original 8 subjects
+    expect(validateSubject('character')).toBe('character');
+    expect(validateSubject('relationship')).toBe('relationship');
+    expect(validateSubject('plot')).toBe('plot');
+    expect(validateSubject('setting')).toBe('setting');
+    expect(validateSubject('theme')).toBe('theme');
+    expect(validateSubject('episode')).toBe('episode');
+    expect(validateSubject('season')).toBe('season');
+    expect(validateSubject('overall')).toBe('overall');
+
+    // Test newly added 6 subjects
+    expect(validateSubject('mood')).toBe('mood');
+    expect(validateSubject('location')).toBe('location');
+    expect(validateSubject('genre')).toBe('genre');
+    expect(validateSubject('conflict')).toBe('conflict');
+    expect(validateSubject('emotion')).toBe('emotion');
+    expect(validateSubject('symbol')).toBe('symbol');
+  });
 });
 
 describe('validateEmojiCount', () => {

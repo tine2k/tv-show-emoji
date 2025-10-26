@@ -3,6 +3,7 @@
 import { Command } from 'commander';
 import { validateSubject, validateEmojiCount } from './validators';
 import { DEFAULT_MODEL, DEFAULT_EMOJI_COUNT, VALID_SUBJECTS } from './constants';
+import { promptForShow, promptForSubject } from './prompts';
 
 const program = new Command();
 
@@ -51,11 +52,35 @@ function detectMode(): Mode {
 
 const mode = detectMode();
 
-console.log(`Mode: ${mode}`);
-console.log('Options:', options);
+async function main() {
+  let show = options.show;
+  let subject = options.subject;
 
-if (mode === 'interactive') {
-  console.log('Interactive mode - will prompt user for inputs (to be implemented in task 1.3)');
-} else {
-  console.log('Non-interactive mode - processing request (to be implemented in tasks 1.4-1.6)');
+  if (mode === 'interactive') {
+    // Prompt for missing values in interactive mode
+    if (!show) {
+      show = await promptForShow();
+    }
+    if (!subject) {
+      subject = await promptForSubject();
+    }
+
+    console.log('\nConfiguration:');
+    console.log(`  TV Show: ${show}`);
+    console.log(`  Subject: ${subject}`);
+    console.log(`  Model: ${options.model}`);
+    console.log(`  Emoji Count: ${options.emojiCount}`);
+    console.log('\nProcessing request (to be implemented in tasks 1.4-1.6)...');
+  } else {
+    console.log('Non-interactive mode - processing request (to be implemented in tasks 1.4-1.6)');
+    console.log(`  TV Show: ${show}`);
+    console.log(`  Subject: ${subject}`);
+    console.log(`  Model: ${options.model}`);
+    console.log(`  Emoji Count: ${options.emojiCount}`);
+  }
 }
+
+main().catch(error => {
+  console.error('Error:', error.message);
+  process.exit(1);
+});
