@@ -3,7 +3,7 @@
 import { Command } from 'commander';
 import { validateSubject, validateEmojiCount, validateTVShow } from './validators';
 import { DEFAULT_MODEL, DEFAULT_EMOJI_COUNT, VALID_SUBJECTS } from './constants';
-import { promptForShow, promptForSubject, promptForContinue } from './prompts';
+import { promptForShow, promptForSubject } from './prompts';
 import { validateOllamaConnection, findBestAvailableModel, OllamaError, generateCompletion } from './ollama';
 import { generatePrompt } from './prompt-generator';
 import { parseEmojiResponse, ParseError } from './response-parser';
@@ -145,98 +145,80 @@ async function main() {
     show = await promptForShow();
   }
 
-  // In interactive mode, loop to allow analyzing different aspects of the same show
-  let continueAnalyzing = true;
+  // Step 4: Get subject
+  let subject = options.subject;
 
-  while (continueAnalyzing) {
-    // Step 4: Get subject
-    let subject = options.subject;
+  if (mode === 'interactive') {
+    subject = await promptForSubject();
+  }
 
-    if (mode === 'interactive') {
-      // In loop, always prompt for subject (even if provided initially)
-      subject = await promptForSubject();
+  // Step 5: Generate prompt
+  const prompt = generatePrompt({
+    tvShow: show,
+    subject,
+    emojiCount: options.emojiCount,
+  });
+
+  // Step 6: Get completion from LLM
+  let response: string;
+  try {
+    // Show loading spinner during LLM processing (only in TTY environments)
+    const spinner = shouldUseColors()
+      ? ora(`Generating emojis with ${selectedModel}...`).start()
+      : null;
+
+    try {
+      isProcessing = true;
+      response = await generateCompletion(selectedModel, prompt);
+      isProcessing = false;
+
+      if (spinner) {
+        spinner.succeed('Emojis generated!');
+      }
+    } catch (error) {
+      isProcessing = false;
+      if (spinner) {
+        spinner.fail('Failed to generate emojis');
+      }
+      throw error;
     }
+  } catch (error) {
+    if (error instanceof OllamaError) {
+      console.error(formatError(error));
+      process.exit(1);
+    }
+    throw error;
+  }
 
-    // Step 5: Generate prompt
-    const prompt = generatePrompt({
+  // Step 7: Parse response
+  try {
+    const results = parseEmojiResponse(response, options.emojiCount);
+
+    // Step 8: Display results
+    const output = formatEmojiResults(results, {
       tvShow: show,
       subject,
       emojiCount: options.emojiCount,
+      interactive: mode === 'interactive',
     });
 
-    // Step 6: Get completion from LLM
-    let response: string;
-    try {
-      // Show loading spinner during LLM processing (only in TTY environments)
-      const spinner = shouldUseColors()
-        ? ora(`Generating emojis with ${selectedModel}...`).start()
-        : null;
-
-      try {
-        isProcessing = true;
-        response = await generateCompletion(selectedModel, prompt);
-        isProcessing = false;
-
-        if (spinner) {
-          spinner.succeed('Emojis generated!');
-        }
-      } catch (error) {
-        isProcessing = false;
-        if (spinner) {
-          spinner.fail('Failed to generate emojis');
-        }
-        throw error;
-      }
-    } catch (error) {
-      if (error instanceof OllamaError) {
-        console.error(formatError(error));
-        process.exit(1);
-      }
-      throw error;
+    console.log(output);
+  } catch (error) {
+    if (error instanceof ParseError) {
+      console.error(formatError(error));
+      console.error(chalk.dim('\nRaw LLM response:'));
+      console.error(chalk.dim(response));
+      process.exit(1);
     }
+    throw error;
+  }
 
-    // Step 7: Parse response
-    try {
-      const results = parseEmojiResponse(response, options.emojiCount);
-
-      // Step 8: Display results
-      const output = formatEmojiResults(results, {
-        tvShow: show,
-        subject,
-        emojiCount: options.emojiCount,
-        interactive: mode === 'interactive',
-      });
-
-      console.log(output);
-    } catch (error) {
-      if (error instanceof ParseError) {
-        console.error(formatError(error));
-        console.error(chalk.dim('\nRaw LLM response:'));
-        console.error(chalk.dim(response));
-        process.exit(1);
-      }
-      throw error;
-    }
-
-    // Step 9: Ask if user wants to continue (interactive mode only)
-    if (mode === 'interactive') {
-      continueAnalyzing = await promptForContinue();
-
-      if (continueAnalyzing) {
-        console.log(''); // Add spacing before next iteration
-      } else {
-        // Friendly exit message
-        const useColors = shouldUseColors();
-        if (useColors) {
-          console.log(chalk.dim('\n👋 Thanks for using tv-show-emoji!\n'));
-        } else {
-          console.log('\nThanks for using tv-show-emoji!\n');
-        }
-      }
-    } else {
-      // Non-interactive mode: exit after first iteration
-      continueAnalyzing = false;
-    }
+  // Step 9: Display friendly exit message
+  const useColors = shouldUseColors();
+  if (useColors) {
+    console.log(chalk.dim('\n👋 Thanks for using tv-show-emoji!\n'));
+  } else {
+    console.log('\nThanks for using tv-show-emoji!\n');
   }
 }
 
