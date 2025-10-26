@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { Command } from 'commander';
-import { validateSubject, validateEmojiCount } from './validators';
+import { validateSubject, validateEmojiCount, validateTVShow } from './validators';
 import { DEFAULT_MODEL, DEFAULT_EMOJI_COUNT, VALID_SUBJECTS } from './constants';
 import { promptForShow, promptForSubject, promptForContinue } from './prompts';
 import { validateOllamaConnection, findBestAvailableModel, OllamaError, generateCompletion } from './ollama';
@@ -18,7 +18,7 @@ program
   .description('CLI tool to suggest emojis for TV show names using local LLM')
   .version('1.0.0')
   .option('--model <model>', 'LLM model to use', DEFAULT_MODEL)
-  .option('--show <name>', 'TV show name')
+  .option('--show <name>', 'TV show name (must be from predefined list)', validateTVShow)
   .option('--subject <subject>', 'Subject to get emojis for', validateSubject)
   .option('--emoji-count <number>', 'Number of emojis to suggest (1-30)', validateEmojiCount, DEFAULT_EMOJI_COUNT)
   .addHelpText('after', `

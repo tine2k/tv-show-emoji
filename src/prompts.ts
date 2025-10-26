@@ -1,25 +1,28 @@
-import { input, select, confirm } from '@inquirer/prompts';
+import { input, select, confirm, search } from '@inquirer/prompts';
 import { TV_SHOWS } from './data/tv-shows';
 import { VALID_SUBJECTS } from './constants';
 
 /**
- * Prompts user to select a TV show with autocomplete functionality.
- * Supports fuzzy search and allows custom show names not in the predefined list.
+ * Prompts user to select a TV show from the predefined list with autocomplete functionality.
+ * Uses fuzzy search to filter TV shows based on user input.
+ * Only allows selection from the predefined TV_SHOWS list.
  */
 export async function promptForShow(): Promise<string> {
-  const answer = await input({
-    message: 'Enter TV show name:',
-    validate: (value: string) => {
-      const trimmed = value.trim();
-      if (trimmed.length === 0) {
-        return 'TV show name cannot be empty';
+  const answer = await search({
+    message: 'Select TV show:',
+    source: async (input) => {
+      if (!input) {
+        // Show initial list when no input
+        return TV_SHOWS.slice(0, 10).map(show => ({ name: show, value: show }));
       }
-      return true;
+
+      // Use filterTVShows to get matches
+      const matches = filterTVShows(input, 10);
+      return matches.map(show => ({ name: show, value: show }));
     },
-    transformer: (value: string) => value.trim(),
   });
 
-  return answer.trim();
+  return answer;
 }
 
 /**

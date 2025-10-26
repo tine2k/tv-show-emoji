@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'bun:test';
-import { validateSubject, validateEmojiCount } from './validators';
+import { validateSubject, validateEmojiCount, validateTVShow } from './validators';
 import { VALID_SUBJECTS } from './constants';
+import { TV_SHOWS } from './data/tv-shows';
 
 describe('validateSubject', () => {
   test('accepts all valid subjects in lowercase', () => {
@@ -110,5 +111,101 @@ describe('validateEmojiCount', () => {
   test('rejects strings starting with non-numeric characters', () => {
     expect(() => validateEmojiCount('a10')).toThrow('must be a number, got "a10"');
     expect(() => validateEmojiCount('!5')).toThrow('must be a number, got "!5"');
+  });
+});
+
+describe('validateTVShow', () => {
+  test('accepts valid TV show names (exact match)', () => {
+    expect(validateTVShow('Breaking Bad')).toBe('Breaking Bad');
+    expect(validateTVShow('The Wire')).toBe('The Wire');
+    expect(validateTVShow('Friends')).toBe('Friends');
+  });
+
+  test('accepts valid TV show names with different casing and normalizes to list casing', () => {
+    expect(validateTVShow('breaking bad')).toBe('Breaking Bad');
+    expect(validateTVShow('BREAKING BAD')).toBe('Breaking Bad');
+    expect(validateTVShow('tHe WiRe')).toBe('The Wire');
+    expect(validateTVShow('FRIENDS')).toBe('Friends');
+  });
+
+  test('accepts valid TV show names with whitespace and trims them', () => {
+    expect(validateTVShow('  Breaking Bad  ')).toBe('Breaking Bad');
+    expect(validateTVShow('\tThe Wire\n')).toBe('The Wire');
+  });
+
+  test('rejects TV show not in the predefined list', () => {
+    expect(() => validateTVShow('Random Show')).toThrow('not in the predefined list');
+    expect(() => validateTVShow('Invalid Series')).toThrow('not in the predefined list');
+  });
+
+  test('rejects empty string', () => {
+    expect(() => validateTVShow('')).toThrow('not in the predefined list');
+    expect(() => validateTVShow('  ')).toThrow('not in the predefined list');
+  });
+
+  test('provides suggestions for similar shows when invalid show is provided', () => {
+    try {
+      validateTVShow('Break');
+      expect(true).toBe(false); // Should not reach here
+    } catch (error: any) {
+      expect(error.message).toContain('Did you mean one of these?');
+      expect(error.message).toContain('Breaking Bad');
+    }
+  });
+
+  test('provides suggestions for partial matches', () => {
+    try {
+      validateTVShow('Star Trek');
+      expect(true).toBe(false); // Should not reach here
+    } catch (error: any) {
+      expect(error.message).toContain('Did you mean one of these?');
+      // Should suggest multiple Star Trek shows
+      expect(error.message).toContain('Star Trek');
+    }
+  });
+
+  test('provides help message when no similar shows found', () => {
+    try {
+      validateTVShow('XYZ123ABC');
+      expect(true).toBe(false); // Should not reach here
+    } catch (error: any) {
+      expect(error.message).toContain('Run with --help to see how to list available shows');
+      expect(error.message).not.toContain('Did you mean one of these?');
+    }
+  });
+
+  test('accepts shows with special characters and apostrophes', () => {
+    expect(validateTVShow("It's Always Sunny in Philadelphia")).toBe("It's Always Sunny in Philadelphia");
+    expect(validateTVShow("Grey's Anatomy")).toBe("Grey's Anatomy");
+    expect(validateTVShow("Bob's Burgers")).toBe("Bob's Burgers");
+  });
+
+  test('accepts shows from different parts of the list', () => {
+    // First show in list
+    expect(validateTVShow('30 Rock')).toBe('30 Rock');
+    // Middle of list
+    expect(validateTVShow('Game of Thrones')).toBe('Game of Thrones');
+    // Last show in list
+    expect(validateTVShow('You')).toBe('You');
+  });
+
+  test('validates all shows in TV_SHOWS list can be accepted', () => {
+    // Sample some shows from the list
+    const sampleShows = [
+      'Avatar: The Last Airbender',
+      'Battlestar Galactica',
+      'Chernobyl',
+      'Dark',
+      'Fargo',
+      'House of the Dragon',
+      'Lost',
+      'The Mandalorian',
+      'Stranger Things',
+      'Westworld',
+    ];
+
+    for (const show of sampleShows) {
+      expect(validateTVShow(show)).toBe(show);
+    }
   });
 });
