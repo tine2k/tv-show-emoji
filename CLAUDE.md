@@ -28,32 +28,97 @@ You MUST read the overview resource to understand the complete workflow. The inf
 
 <!-- BACKLOG.MD MCP GUIDELINES END -->
 
-## GIT COMMIT WORKFLOW
+## GIT WORKTREE AND TASK WORKFLOW
 
-**CRITICAL: Whenever you complete a Backlog task:**
+**CRITICAL: Each task must be implemented in its own git worktree**
 
-1. Mark the task as completed using the MCP tools
-2. Create a git commit that includes:
+### Starting a Task
+
+When beginning work on a Backlog task:
+
+1. **Create a dedicated worktree** for the task in a separate directory:
+   ```bash
+   git worktree add ../tv-show-emoji-task-X.Y task-X.Y
+   cd ../tv-show-emoji-task-X.Y
+   ```
+   - Use the naming convention: `../tv-show-emoji-task-X.Y` where X.Y is the task ID
+   - This creates a new branch `task-X.Y` and checks it out in the worktree directory
+
+2. **Work isolation:** All development for the task happens in this dedicated worktree
+   - Run tests: `bun test`
+   - Run the application: `bun run dev`
+   - Make commits as needed during development
+
+### Completing a Task
+
+When finishing a Backlog task:
+
+1. **Ensure all tests pass** in the worktree: `bun test`
+
+2. **Create final commit(s)** that include:
    - All code/documentation changes made for the task
    - The updated task markdown file from the backlog/ directory
-3. Use a clear commit message that references the task ID and describes what was accomplished
+   - Clear commit message referencing the task ID
 
-**Example:**
+3. **Switch back to main worktree and merge:**
+   ```bash
+   cd /Users/tine2k/Documents/git/tv-show-emoji
+   git merge --no-ff task-X.Y -m "Complete task-X.Y: [Description]
+
+   - [Change 1]
+   - [Change 2]
+
+   🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+   Co-Authored-By: Claude <noreply@anthropic.com>"
+   ```
+
+4. **Mark task as completed** using MCP tools
+
+5. **Clean up the worktree:**
+   ```bash
+   git worktree remove ../tv-show-emoji-task-X.Y
+   git branch -d task-X.Y
+   ```
+
+### Benefits
+
+- **Isolation:** Each task has its own working directory, preventing conflicts
+- **Context switching:** Easily switch between tasks without stashing changes
+- **Clean history:** Each task results in a clear merge commit
+- **Safety:** Main branch remains stable during development
+
+### Example Complete Workflow
+
 ```bash
-git add src/ backlog/tasks/task-1.1*.md
-git commit -m "Complete task-1.1: Set up project infrastructure
+# Start task-1.7
+git worktree add ../tv-show-emoji-task-1.7 task-1.7
+cd ../tv-show-emoji-task-1.7
 
-- Initialize TypeScript/Bun project
-- Install dependencies (inquirer, chalk, ora, commander, ollama)
-- Configure build for single executable
-- Add dev and build scripts
+# ... implement changes ...
+# ... write tests ...
+bun test
+
+# Commit changes
+git add .
+git commit -m "Implement comprehensive error handling"
+
+# Return to main worktree and merge
+cd /Users/tine2k/Documents/git/tv-show-emoji
+git merge --no-ff task-1.7 -m "Complete task-1.7: Implement comprehensive error handling
+
+- Add error handling for API calls
+- Add validation error messages
+- Include error recovery strategies
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
-```
 
-This ensures that task progress and code changes are synchronized in version control.
+# Clean up
+git worktree remove ../tv-show-emoji-task-1.7
+git branch -d task-1.7
+```
 
 ## TESTING REQUIREMENTS
 
